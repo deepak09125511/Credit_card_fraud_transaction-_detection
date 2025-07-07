@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: credit-card-fraud-detection
+    env: python
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "gunicorn fraud_project.wsgi:application"
+    envVars:
+      - key: PORT
+        value: 10000
