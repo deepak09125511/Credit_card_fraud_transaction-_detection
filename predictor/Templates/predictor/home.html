@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Fraud Detection App</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            height: 100vh;
+            background: linear-gradient(135deg, #0d0d0d, #1f1f1f, #3e3e3e);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #eaeaea;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            position: relative;
+            padding: 20px;
+        }
+
+        .left-icon {
+            position: absolute;
+            left: 40px;
+            bottom: 40px;
+            font-size: 80px;
+            color: #888;
+            opacity: 0.05;
+            animation: pulse 4s infinite ease-in-out;
+            z-index: 0;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+                opacity: 0.05;
+            }
+            50% {
+                transform: scale(1.1);
+                opacity: 0.15;
+            }
+        }
+
+        .floating-title {
+            font-size: 26px;
+            color: #ccc;
+            text-align: center;
+            margin-bottom: 20px;
+            animation: slideDown 1.5s ease-out forwards;
+            opacity: 0;
+        }
+
+        @keyframes slideDown {
+            0% {
+                transform: translateY(-50px);
+                opacity: 0;
+            }
+            100% {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.02);
+            backdrop-filter: blur(10px);
+            padding: 35px;
+            border-radius: 20px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+            width: 90%;
+            max-width: 600px;
+            position: relative;
+            z-index: 2;
+        }
+
+        h2 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #ffffff;
+            font-weight: 500;
+        }
+
+        form {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        input[type="number"] {
+            width: 100%;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 8px;
+            background: #1a1a1a;
+            color: #eaeaea;
+            font-size: 14px;
+            box-shadow: inset 2px 2px 4px #0a0a0a, inset -2px -2px 4px #2a2a2a;
+            transition: box-shadow 0.2s;
+        }
+
+        input[type="number"]:focus {
+            outline: none;
+            box-shadow: inset 2px 2px 6px #000, inset -2px -2px 6px #333;
+        }
+
+        button {
+            margin-top: 15px;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            background: linear-gradient(145deg, #444, #222);
+            color: #fff;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        button:hover {
+            background: linear-gradient(145deg, #666, #333);
+        }
+
+        #inputs {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        #inputs::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        #inputs::-webkit-scrollbar-thumb {
+            background: #555;
+            border-radius: 3px;
+        }
+
+        #result-box {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+            display: none;
+        }
+
+        .safe {
+            background-color: #1b5e20;
+            color: #c8facc;
+        }
+
+        .fraud {
+            background-color: #b71c1c;
+            color: #ffeaea;
+        }
+
+        @media (max-width: 768px) {
+            .floating-title {
+                font-size: 18px;
+            }
+
+            .left-icon {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Left Security Icon -->
+    <div class="left-icon">🔒</div>
+
+    <div class="container">
+        <div class="floating-title">🔍 Check Your Transaction Security</div>
+        <h2>Enter 31 Features for Fraud Detection</h2>
+        <form id="predictForm">
+            <div id="inputs"></div>
+            <button type="submit">Predict</button>
+        </form>
+        <div id="result-box"></div> <!-- 👈 Output box here -->
+    </div>
+
+    <script>
+        const inputContainer = document.getElementById("inputs");
+        for (let i = 0; i < 31; i++) {
+            const input = document.createElement("input");
+            input.type = "number";
+            input.step = "any";
+            input.placeholder = `Feature ${i + 1}`;
+            input.name = `f${i}`;
+            input.required = true;
+            inputContainer.appendChild(input);
+        }
+
+        document.getElementById("predictForm").onsubmit = async function (e) {
+            e.preventDefault();
+            const inputs = document.querySelectorAll("#inputs input");
+            const features = Array.from(inputs).map(input => parseFloat(input.value));
+
+            const response = await fetch("/predict_view/", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ features: features })
+            });
+
+            const result = await response.json();
+            const resultBox = document.getElementById("result-box");
+
+            if (result.prediction !== undefined) {
+                resultBox.style.display = "block";
+                if (result.prediction) {
+                    resultBox.className = "fraud";
+                    resultBox.textContent = "⚠️ FRAUD DETECTED";
+                } else {
+                    resultBox.className = "safe";
+                    resultBox.textContent = "✅ Transaction is Safe";
+                }
+            } else {
+                resultBox.style.display = "block";
+                resultBox.className = "fraud";
+                resultBox.textContent = "❌ Error: " + result.error;
+            }
+        };
+    </script>
+</body>
+</html>
+
+
+
